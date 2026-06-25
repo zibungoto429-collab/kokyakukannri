@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>顧客管理システム</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="loginView" class="login-wrap">
+    <div class="login-card">
+      <h1 class="login-title">ログイン</h1>
+      <p class="login-sub">
+        この画面は、HTML / CSS / JavaScript だけで動く単体版です。<br>
+        まずはログインして、名簿管理を始められます。
+      </p>
+
+      <div class="login-field">
+        <label for="loginUser">ユーザー名</label>
+        <input id="loginUser" type="text" placeholder="admin" autocomplete="username" />
+      </div>
+
+      <div class="login-field">
+        <label for="loginPass">パスワード</label>
+        <input id="loginPass" type="password" placeholder="admin123" autocomplete="current-password" />
+      </div>
+
+      <div class="login-actions">
+        <button id="loginBtn" class="btn btn-yellow" style="flex:1">ログイン</button>
+        <button id="fillDemoBtn" class="btn btn-white">入力補助</button>
+      </div>
+
+      <p class="login-sub" style="margin-top:18px;font-size:13px">
+        デモ用アカウント例: <b>admin / admin123</b><br>
+        本当に3人同時利用したい場合は、あとでサーバー保存に変えると共有できます。
+      </p>
+    </div>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <div class="shell">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button id="newBtn" class="btn btn-yellow">新規作成</button>
+          <button id="saveBtn" class="btn btn-cyan">保存</button>
+          <button id="deleteBtn" class="btn btn-pink">削除</button>
+          <button id="searchBtn" class="btn btn-white">検索</button>
+          <input id="searchInputTop" type="text" placeholder="名前 / 識別ID / メール / 学校で検索" style="min-width:min(460px,100%);border:3px solid var(--line);border-radius:16px;padding:14px 16px;outline:none;background:#fff;">
+        </div>
+
+        <div class="topbar-right">
+          <div class="tabs">
+            <button class="tab" id="tabHighschool">高校生</button>
+            <button class="tab" id="tabMentor">大学生メンター</button>
+          </div>
+
+          <div class="pager">
+            <button class="arrow-btn" id="prevBtn" aria-label="前へ">←</button>
+            <div class="count" id="pagerText">01/01</div>
+            <button class="arrow-btn" id="nextBtn" aria-label="次へ">→</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="main">
+        <aside class="sidebar">
+          <div class="sidebar-head">一覧</div>
+          <div class="search-box">
+            <div class="search-row">
+              <input id="searchInputSide" type="text" placeholder="ここでも検索できます" />
+              <button id="clearSearchBtn" class="btn btn-small btn-gray">解除</button>
+            </div>
+          </div>
+          <div id="resultList" class="result-list"></div>
+        </aside>
+
+        <section class="form-panel">
+          <div class="form-head">
+            <div class="form-title-wrap">
+              <span class="badge" id="currentTabBadge">高校生</span>
+              <span class="form-status" id="statusText">選択中のデータを表示しています</span>
+            </div>
+            <div class="form-actions">
+              <button id="newInlineBtn" class="btn btn-yellow btn-small">新規作成</button>
+              <button id="saveInlineBtn" class="btn btn-cyan btn-small">保存</button>
+              <button id="deleteInlineBtn" class="btn btn-pink btn-small">削除</button>
+            </div>
+          </div>
+
+          <div class="form-body">
+            <div class="id-box">
+              <label for="idInput">識別ID</label>
+              <input id="idInput" type="text" readonly />
+            </div>
+
+            <div class="field">
+              <label for="nameInput">名前</label>
+              <input id="nameInput" type="text" placeholder="山田 太郎" />
+            </div>
+
+            <div class="field">
+              <label for="gradeInput">学年</label>
+              <input id="gradeInput" type="text" placeholder="高校2年 / 大学3年 など" />
+            </div>
+
+            <div class="field">
+              <label for="emailInput">メールアドレス</label>
+              <input id="emailInput" type="email" placeholder="example@mail.com" />
+            </div>
+
+            <div class="field">
+              <label for="phoneInput">電話番号</label>
+              <input id="phoneInput" type="tel" placeholder="090-1234-5678" />
+            </div>
+
+            <div class="field">
+              <label for="instaInput">インスタID</label>
+              <input id="instaInput" type="text" placeholder="instagram_id" />
+            </div>
+
+            <div class="field">
+              <label for="schoolInput">出身学校</label>
+              <input id="schoolInput" type="text" placeholder="○○高校 / ○○大学 など" />
+            </div>
+          </div>
+
+          <div class="help-box" id="helpBox">
+            画面上の「高校生」「大学生メンター」タブで切り替えます。<br>
+            検索すると、そのタブ内の対象だけが一覧に出ます。<br>
+            右上の 01/10 は、現在の表示位置 / 検索結果総数です。
+          </div>
+
+          <div class="footer-note">
+            ※ この版はコピペで動くように、ブラウザ内保存（localStorage）で作っています。<br>
+            ※ GitHubで公開する場合は、そのまま静的サイトとして置けます。
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
