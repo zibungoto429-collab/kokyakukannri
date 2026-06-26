@@ -26,7 +26,6 @@ button, input{
 
 .hidden{ display:none !important; }
 
-/* Login */
 .login-wrap{
   min-height:100vh;
   display:flex;
@@ -86,7 +85,6 @@ button, input{
   margin-top:18px;
 }
 
-/* Buttons */
 .btn{
   border:3px solid var(--line);
   border-radius:18px;
@@ -121,7 +119,6 @@ button, input{
   background:#fff;
 }
 
-/* App */
 .app{
   min-height:100vh;
   padding:18px;
