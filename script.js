@@ -1,6 +1,6 @@
-const LS_KEY = "crm_people_v2";
-const SESSION_KEY = "crm_session_v2";
-const USERS_KEY = "crm_users_v2";
+const LS_KEY = "crm_people_v3";
+const SESSION_KEY = "crm_session_v3";
+const USERS_KEY = "crm_users_v3";
 
 const $ = (id) => document.getElementById(id);
 
@@ -54,6 +54,9 @@ const state = {
   session: loadSession()
 };
 
+const ID_LENGTH = 8;
+const ID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
 function loadUsers() {
   const saved = localStorage.getItem(USERS_KEY);
   if (saved) {
@@ -85,6 +88,10 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function generateSampleId() {
+  return generateUniqueId();
+}
+
 function loadData() {
   const saved = localStorage.getItem(LS_KEY);
   if (saved) {
@@ -96,7 +103,7 @@ function loadData() {
   const seed = {
     highschool: [
       {
-        id: "HS-001",
+        id: generateSampleId(),
         registerDate: "2026-06-01",
         name: "佐藤 花子",
         grade: "高校2年",
@@ -106,7 +113,7 @@ function loadData() {
         school: "新潟南高校"
       },
       {
-        id: "HS-002",
+        id: generateSampleId(),
         registerDate: "2026-06-03",
         name: "鈴木 一郎",
         grade: "高校3年",
@@ -116,7 +123,7 @@ function loadData() {
         school: "新潟北高校"
       },
       {
-        id: "HS-003",
+        id: generateSampleId(),
         registerDate: "2026-06-05",
         name: "田中 美咲",
         grade: "高校1年",
@@ -128,7 +135,7 @@ function loadData() {
     ],
     mentor: [
       {
-        id: "MT-001",
+        id: generateSampleId(),
         registerDate: "2026-06-02",
         name: "高橋 優斗",
         grade: "大学3年",
@@ -138,7 +145,7 @@ function loadData() {
         school: "新潟大学"
       },
       {
-        id: "MT-002",
+        id: generateSampleId(),
         registerDate: "2026-06-04",
         name: "伊藤 里奈",
         grade: "大学2年",
@@ -148,7 +155,7 @@ function loadData() {
         school: "長岡技術科学大学"
       },
       {
-        id: "MT-003",
+        id: generateSampleId(),
         registerDate: "2026-06-06",
         name: "小林 健",
         grade: "大学4年",
@@ -176,13 +183,41 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
-function makeId(prefix, arr) {
-  let max = 0;
-  for (const item of arr) {
-    const m = String(item.id || "").match(/(\d+)$/);
-    if (m) max = Math.max(max, Number(m[1]));
+function randomId(length = ID_LENGTH) {
+  const bytes = new Uint8Array(length);
+  if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => ID_CHARS[b % ID_CHARS.length]).join("");
   }
-  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += ID_CHARS[Math.floor(Math.random() * ID_CHARS.length)];
+  }
+  return out;
+}
+
+function allExistingIds(excludeId = null) {
+  const ids = new Set();
+  for (const bucket of Object.values(state.data)) {
+    for (const item of bucket) {
+      if (item.id && item.id !== excludeId) ids.add(String(item.id).toUpperCase());
+    }
+  }
+  return ids;
+}
+
+function generateUniqueId(excludeId = null) {
+  const ids = allExistingIds(excludeId);
+  let candidate = "";
+  let guard = 0;
+  do {
+    candidate = randomId(ID_LENGTH).toUpperCase();
+    guard += 1;
+    if (guard > 10000) {
+      throw new Error("ID生成が繰り返し失敗しました。");
+    }
+  } while (ids.has(candidate));
+  return candidate;
 }
 
 function matchesQuery(item, q) {
@@ -273,7 +308,7 @@ function startNewRecord() {
   state.selectedId = null;
 
   const prefix = state.tab === "highschool" ? "HS" : "MT";
-  const preview = `${prefix}-${String(currentList().length + 1).padStart(3, "0")}`;
+  const preview = generateUniqueId();
 
   fillForm({
     id: preview,
@@ -301,9 +336,14 @@ function saveRecord() {
   const list = state.data[state.tab];
 
   if (state.mode === "new" || !state.selectedId) {
-    const prefix = state.tab === "highschool" ? "HS" : "MT";
+    let nextId = form.id ? form.id.toUpperCase() : generateUniqueId();
+    const ids = allExistingIds();
+    while (ids.has(nextId)) {
+      nextId = generateUniqueId();
+    }
+
     const newItem = {
-      id: makeId(prefix, list),
+      id: nextId,
       registerDate: form.registerDate || todayISO(),
       name: form.name,
       grade: form.grade,
@@ -313,7 +353,6 @@ function saveRecord() {
       school: form.school
     };
 
-    // 末尾に追加
     list.push(newItem);
     state.selectedId = newItem.id;
     state.mode = "view";
@@ -510,7 +549,6 @@ function initAuth() {
   }
 }
 
-/* Events */
 loginBtn.addEventListener("click", login);
 fillDemoBtn.addEventListener("click", () => {
   loginUser.value = "admin";
@@ -568,7 +606,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && e.ctrlKey) logout();
 });
 
-/* Initial */
 initAuth();
 render();
 
