@@ -29,6 +29,8 @@ const deleteInlineBtn = $("deleteInlineBtn");
 
 const searchInputTop = $("searchInputTop");
 const searchInputSide = $("searchInputSide");
+const numberSearchInput = $("numberSearchInput");
+const numberJumpBtn = $("numberJumpBtn");
 const clearSearchBtn = $("clearSearchBtn");
 const pagerText = $("pagerText");
 const resultList = $("resultList");
@@ -44,12 +46,10 @@ const phoneInput = $("phoneInput");
 const instaInput = $("instaInput");
 const schoolInput = $("schoolInput");
 
-const ID_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const ID_LENGTH = 8;
-
 const state = {
   tab: "highschool",
   search: "",
+  numberSearch: "",
   selectedId: null,
   mode: "view",
   data: loadData(),
@@ -88,49 +88,6 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function makeRandomId() {
-  let out = "";
-  for (let i = 0; i < ID_LENGTH; i += 1) {
-    out += ID_CHARS[Math.floor(Math.random() * ID_CHARS.length)];
-  }
-  return out;
-}
-
-function collectAllIds(data) {
-  const ids = new Set();
-  for (const group of Object.values(data || {})) {
-    if (!Array.isArray(group)) continue;
-    for (const item of group) {
-      if (item && typeof item.id === "string") ids.add(item.id);
-    }
-  }
-  return ids;
-}
-
-function makeUniqueId(existingIds) {
-  const taken = existingIds instanceof Set ? existingIds : new Set(existingIds || []);
-  for (let attempt = 0; attempt < 5000; attempt += 1) {
-    const id = makeRandomId();
-    if (!taken.has(id)) return id;
-  }
-  throw new Error("一意の識別IDを生成できませんでした。");
-}
-
-function createSeedRecord(prefix, existingIds, values) {
-  const id = makeUniqueId(existingIds);
-  existingIds.add(id);
-  return {
-    id,
-    registerDate: values.registerDate,
-    name: values.name,
-    grade: values.grade,
-    email: values.email,
-    phone: values.phone,
-    instagram: values.instagram,
-    school: values.school
-  };
-}
-
 function loadData() {
   const saved = localStorage.getItem(LS_KEY);
   if (saved) {
@@ -139,10 +96,10 @@ function loadData() {
     } catch (e) {}
   }
 
-  const existingIds = new Set();
   const seed = {
     highschool: [
-      createSeedRecord("HS", existingIds, {
+      {
+        id: "HS-001",
         registerDate: "2026-06-01",
         name: "佐藤 花子",
         grade: "高校2年",
@@ -150,8 +107,9 @@ function loadData() {
         phone: "090-1111-2222",
         instagram: "hanako_hs",
         school: "新潟南高校"
-      }),
-      createSeedRecord("HS", existingIds, {
+      },
+      {
+        id: "HS-002",
         registerDate: "2026-06-03",
         name: "鈴木 一郎",
         grade: "高校3年",
@@ -159,8 +117,9 @@ function loadData() {
         phone: "090-3333-4444",
         instagram: "ichiro_s",
         school: "新潟北高校"
-      }),
-      createSeedRecord("HS", existingIds, {
+      },
+      {
+        id: "HS-003",
         registerDate: "2026-06-05",
         name: "田中 美咲",
         grade: "高校1年",
@@ -168,10 +127,11 @@ function loadData() {
         phone: "090-5555-6666",
         instagram: "misaki_t",
         school: "新発田高校"
-      })
+      }
     ],
     mentor: [
-      createSeedRecord("MT", existingIds, {
+      {
+        id: "MT-001",
         registerDate: "2026-06-02",
         name: "高橋 優斗",
         grade: "大学3年",
@@ -179,8 +139,9 @@ function loadData() {
         phone: "080-1234-5678",
         instagram: "yuto_mentor",
         school: "新潟大学"
-      }),
-      createSeedRecord("MT", existingIds, {
+      },
+      {
+        id: "MT-002",
         registerDate: "2026-06-04",
         name: "伊藤 里奈",
         grade: "大学2年",
@@ -188,8 +149,9 @@ function loadData() {
         phone: "080-2345-6789",
         instagram: "rina_m",
         school: "長岡技術科学大学"
-      }),
-      createSeedRecord("MT", existingIds, {
+      },
+      {
+        id: "MT-003",
         registerDate: "2026-06-06",
         name: "小林 健",
         grade: "大学4年",
@@ -197,7 +159,7 @@ function loadData() {
         phone: "080-3456-7890",
         instagram: "ken_k",
         school: "新潟県立大学"
-      })
+      }
     ]
   };
 
@@ -217,8 +179,13 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
-function regenerateIdAvoidingCollision(allIds) {
-  return makeUniqueId(allIds);
+function makeId(prefix, arr) {
+  let max = 0;
+  for (const item of arr) {
+    const m = String(item.id || "").match(/(\d+)$/);
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
 }
 
 function matchesQuery(item, q) {
@@ -236,12 +203,25 @@ function matchesQuery(item, q) {
   return hay.includes(q.toLowerCase());
 }
 
+function currentTextFilteredList() {
+  return (state.data[state.tab] || []).filter(item => matchesQuery(item, state.search.trim()));
+}
+
+function applyNumberFilter(list) {
+  const raw = state.numberSearch.trim();
+  if (!raw) return list;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) return [];
+  if (n > list.length) return [];
+  return [list[n - 1]];
+}
+
 function currentList() {
-  return state.data[state.tab] || [];
+  return currentTextFilteredList();
 }
 
 function filteredList() {
-  return currentList().filter(item => matchesQuery(item, state.search.trim()));
+  return applyNumberFilter(currentTextFilteredList());
 }
 
 function selectedItem() {
@@ -308,12 +288,11 @@ function startNewRecord() {
   state.mode = "new";
   state.selectedId = null;
 
-  const allIds = collectAllIds(state.data);
-  const previewId = regenerateIdAvoidingCollision(allIds);
-  allIds.add(previewId);
+  const prefix = state.tab === "highschool" ? "HS" : "MT";
+  const preview = `${prefix}-${String((state.data[state.tab] || []).length + 1).padStart(3, "0")}`;
 
   fillForm({
-    id: previewId,
+    id: preview,
     registerDate: todayISO(),
     name: "",
     grade: "",
@@ -336,16 +315,11 @@ function saveRecord() {
   }
 
   const list = state.data[state.tab];
-  const allIds = collectAllIds(state.data);
-  if (state.selectedId) allIds.delete(state.selectedId);
 
   if (state.mode === "new" || !state.selectedId) {
-    let newId = form.id || regenerateIdAvoidingCollision(allIds);
-    while (allIds.has(newId)) {
-      newId = regenerateIdAvoidingCollision(allIds);
-    }
+    const prefix = state.tab === "highschool" ? "HS" : "MT";
     const newItem = {
-      id: newId,
+      id: makeId(prefix, list),
       registerDate: form.registerDate || todayISO(),
       name: form.name,
       grade: form.grade,
@@ -434,6 +408,23 @@ function applySearch(q) {
   render();
 }
 
+function applyNumberSearch(q) {
+  state.numberSearch = q;
+  state.mode = "view";
+  syncSelectedToList();
+  render();
+}
+
+function clearSearch() {
+  state.search = "";
+  state.numberSearch = "";
+  searchInputTop.value = "";
+  searchInputSide.value = "";
+  numberSearchInput.value = "";
+  syncSelectedToList();
+  render();
+}
+
 function renderTabs() {
   tabHighschool.classList.toggle("active", state.tab === "highschool");
   tabMentor.classList.toggle("active", state.tab === "mentor");
@@ -441,9 +432,8 @@ function renderTabs() {
 
   helpBox.innerHTML = `
     タブで高校生 / 大学生メンターを切り替えます。<br>
-    検索はそのタブ内で行われます。<br>
-    右上の ${pagerText.textContent} は「現在番号 / 総数」です。<br>
-    識別IDは 8 桁のランダム英数字で、重複しないように自動生成します。
+    名前などの検索に加えて、一覧の「番号」でも絞り込みできます。<br>
+    右上の ${pagerText.textContent} は「現在番号 / 総数」です。
   `;
 }
 
@@ -452,40 +442,52 @@ function renderPager() {
 
   if (!list.length) {
     pagerText.textContent = "00/00";
-    statusText.textContent = state.search ? "検索結果がありません" : "データがありません";
+    statusText.textContent = state.search || state.numberSearch ? "検索結果がありません" : "データがありません";
     return;
   }
 
   const idx = Math.max(0, list.findIndex(x => x.id === state.selectedId));
   const current = idx >= 0 ? idx + 1 : 1;
   pagerText.textContent = `${pad2(current)}/${pad2(list.length)}`;
-  statusText.textContent = state.mode === "new" ? "新規作成モード" : `表示中: ${current} / ${list.length}`;
+
+  if (state.numberSearch.trim()) {
+    statusText.textContent = `番号検索中: ${pad2(Number(state.numberSearch.trim()))}`;
+  } else {
+    statusText.textContent = state.mode === "new" ? "新規作成モード" : `表示中: ${current} / ${list.length}`;
+  }
 }
 
 function renderSidebar() {
+  const baseList = currentTextFilteredList();
   const list = filteredList();
 
   if (!list.length) {
     resultList.innerHTML = `
       <div style="padding:12px;color:#777;line-height:1.7">
         該当するデータがありません。<br>
-        検索語を消すか、新規作成してください。
+        検索語や番号を消すか、新規作成してください。
       </div>
     `;
     return;
   }
 
-  resultList.innerHTML = list.map(item => `
-    <div class="result-item ${item.id === state.selectedId ? "active" : ""}" data-id="${item.id}">
-      <div class="result-name">${escapeHtml(item.name)}</div>
-      <div class="result-meta">
-        ${escapeHtml(item.id)}<br>
-        登録日: ${escapeHtml(item.registerDate || "")}<br>
-        ${escapeHtml(item.grade || "")}<br>
-        ${escapeHtml(item.school || "")}
+  resultList.innerHTML = list.map(item => {
+    const displayNo = baseList.findIndex(x => x.id === item.id) + 1;
+    return `
+      <div class="result-item ${item.id === state.selectedId ? "active" : ""}" data-id="${item.id}">
+        <div class="result-top">
+          <div class="result-number">#${pad2(displayNo)}</div>
+          <div class="result-name">${escapeHtml(item.name)}</div>
+        </div>
+        <div class="result-meta">
+          ${escapeHtml(item.id)}<br>
+          登録日: ${escapeHtml(item.registerDate || "")}<br>
+          ${escapeHtml(item.grade || "")}<br>
+          ${escapeHtml(item.school || "")}
+        </div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
   resultList.querySelectorAll(".result-item").forEach(el => {
     el.addEventListener("click", () => selectItem(el.dataset.id));
@@ -502,7 +504,14 @@ function renderForm() {
   }
 }
 
+function renderInputs() {
+  searchInputTop.value = state.search;
+  searchInputSide.value = state.search;
+  numberSearchInput.value = state.numberSearch;
+}
+
 function render() {
+  renderInputs();
   renderTabs();
   renderSidebar();
   renderForm();
@@ -552,6 +561,7 @@ function initAuth() {
   }
 }
 
+/* Events */
 loginBtn.addEventListener("click", login);
 fillDemoBtn.addEventListener("click", () => {
   loginUser.value = "admin";
@@ -574,11 +584,7 @@ deleteBtn.addEventListener("click", deleteRecord);
 deleteInlineBtn.addEventListener("click", deleteRecord);
 
 searchBtn.addEventListener("click", () => applySearch(searchInputTop.value));
-clearSearchBtn.addEventListener("click", () => {
-  searchInputTop.value = "";
-  searchInputSide.value = "";
-  applySearch("");
-});
+clearSearchBtn.addEventListener("click", clearSearch);
 
 searchInputTop.addEventListener("keydown", (e) => {
   if (e.key === "Enter") applySearch(searchInputTop.value);
@@ -593,6 +599,14 @@ searchInputSide.addEventListener("input", () => {
 searchInputTop.addEventListener("input", () => {
   searchInputSide.value = searchInputTop.value;
 });
+
+numberSearchInput.addEventListener("input", () => {
+  applyNumberSearch(numberSearchInput.value);
+});
+numberSearchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") applyNumberSearch(numberSearchInput.value);
+});
+numberJumpBtn.addEventListener("click", () => applyNumberSearch(numberSearchInput.value));
 
 prevBtn.addEventListener("click", goPrev);
 nextBtn.addEventListener("click", goNext);
@@ -609,6 +623,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && e.ctrlKey) logout();
 });
 
+/* Initial */
 initAuth();
 render();
 
