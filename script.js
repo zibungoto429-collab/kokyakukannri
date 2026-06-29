@@ -207,21 +207,12 @@ function currentTextFilteredList() {
   return (state.data[state.tab] || []).filter(item => matchesQuery(item, state.search.trim()));
 }
 
-function applyNumberFilter(list) {
-  const raw = state.numberSearch.trim();
-  if (!raw) return list;
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 1) return [];
-  if (n > list.length) return [];
-  return [list[n - 1]];
-}
-
 function currentList() {
   return currentTextFilteredList();
 }
 
 function filteredList() {
-  return applyNumberFilter(currentTextFilteredList());
+  return currentTextFilteredList();
 }
 
 function selectedItem() {
@@ -408,10 +399,33 @@ function applySearch(q) {
   render();
 }
 
-function applyNumberSearch(q) {
-  state.numberSearch = q;
+function jumpToNumber(q) {
+  const raw = String(q ?? "").trim();
+  state.numberSearch = raw;
+
+  if (!raw) {
+    syncSelectedToList();
+    render();
+    return;
+  }
+
+  const n = Number(raw);
+  const list = currentTextFilteredList();
+
+  if (!Number.isInteger(n) || n < 1) {
+    alert("番号は1以上の整数で入力してください。");
+    render();
+    return;
+  }
+
+  if (n > list.length) {
+    alert("その番号は一覧にありません。");
+    render();
+    return;
+  }
+
+  state.selectedId = list[n - 1].id;
   state.mode = "view";
-  syncSelectedToList();
   render();
 }
 
@@ -442,24 +456,23 @@ function renderPager() {
 
   if (!list.length) {
     pagerText.textContent = "00/00";
-    statusText.textContent = state.search || state.numberSearch ? "検索結果がありません" : "データがありません";
+    statusText.textContent = state.search ? "検索結果がありません" : "データがありません";
     return;
   }
 
   const idx = Math.max(0, list.findIndex(x => x.id === state.selectedId));
   const current = idx >= 0 ? idx + 1 : 1;
   pagerText.textContent = `${pad2(current)}/${pad2(list.length)}`;
-
-  if (state.numberSearch.trim()) {
-    statusText.textContent = `番号検索中: ${pad2(Number(state.numberSearch.trim()))}`;
-  } else {
-    statusText.textContent = state.mode === "new" ? "新規作成モード" : `表示中: ${current} / ${list.length}`;
-  }
+  statusText.textContent = state.numberSearch.trim()
+    ? `番号へ移動: ${pad2(Number(state.numberSearch.trim()))}`
+    : state.mode === "new"
+      ? "新規作成モード"
+      : `表示中: ${current} / ${list.length}`;
 }
 
 function renderSidebar() {
   const baseList = currentTextFilteredList();
-  const list = filteredList();
+  const list = baseList;
 
   if (!list.length) {
     resultList.innerHTML = `
@@ -601,12 +614,12 @@ searchInputTop.addEventListener("input", () => {
 });
 
 numberSearchInput.addEventListener("input", () => {
-  applyNumberSearch(numberSearchInput.value);
+  jumpToNumber(numberSearchInput.value);
 });
 numberSearchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") applyNumberSearch(numberSearchInput.value);
+  if (e.key === "Enter") jumpToNumber(numberSearchInput.value);
 });
-numberJumpBtn.addEventListener("click", () => applyNumberSearch(numberSearchInput.value));
+numberJumpBtn.addEventListener("click", () => jumpToNumber(numberSearchInput.value));
 
 prevBtn.addEventListener("click", goPrev);
 nextBtn.addEventListener("click", goNext);
