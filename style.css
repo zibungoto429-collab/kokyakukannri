@@ -256,6 +256,11 @@ button, input{
   align-items:center;
 }
 
+.search-row + .search-row{
+  margin-top:10px;
+}
+
+.number-row input,
 .search-row input{
   flex:1;
   border:3px solid var(--line);
@@ -289,9 +294,26 @@ button, input{
   background:#fff3a6;
 }
 
+.result-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:4px;
+}
+
+.result-number{
+  min-width:54px;
+  text-align:center;
+  padding:4px 8px;
+  border:2px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  font-weight:900;
+  font-size:13px;
+}
+
 .result-name{
   font-weight:900;
-  margin-bottom:4px;
 }
 
 .result-meta{
@@ -485,5 +507,10 @@ button, input{
 
   .search-global{
     min-width:100%;
+  }
+
+  .search-row{
+    flex-direction:column;
+    align-items:stretch;
   }
 }
