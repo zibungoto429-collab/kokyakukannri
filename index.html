@@ -66,8 +66,12 @@
           <div class="sidebar-head">一覧</div>
           <div class="search-box">
             <div class="search-row">
-              <input id="searchInputSide" type="text" placeholder="ここでも検索できます" />
+              <input id="searchInputSide" type="text" placeholder="名前・ID・メール・学校で検索" />
               <button id="clearSearchBtn" class="btn btn-small btn-gray">解除</button>
+            </div>
+            <div class="search-row number-row">
+              <input id="numberSearchInput" type="text" inputmode="numeric" placeholder="番号で検索（例: 3）" />
+              <button id="numberJumpBtn" class="btn btn-small btn-cyan">移動</button>
             </div>
           </div>
           <div id="resultList" class="result-list"></div>
@@ -130,7 +134,7 @@
 
           <div class="help-box" id="helpBox">
             タブで高校生 / 大学生メンターを切り替えます。<br>
-            検索はそのタブ内で行われます。<br>
+            名前などの検索に加えて、一覧の「番号」でも絞り込みできます。<br>
             右上の 01/10 は「現在番号 / 総数」です。
           </div>
         </section>
